@@ -29,4 +29,3 @@ def strReplace(string, replacementStr, index):
 def clamp(val, max):
   ''' Clamps val to max if val is above max '''
   return val if val < max else max
-

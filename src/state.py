@@ -3,6 +3,7 @@ from utils import Coordinate
 import map as _map
 import enum
 from eventbus import EventBus, EventType
+from functools import partial
 
 class EntityActions(enum.Enum):
   MOVE_LEFT = Coordinate(-1, 0)
@@ -31,10 +32,10 @@ class Character(Entity):
 class Player(Character):
   def __init__(self, pos: Coordinate):
     super().__init__(pos=pos)
-    EventBus.registerSubscriber(EventType.KEY_A, lambda x: self.queueAction(EntityActions.MOVE_LEFT))
-    EventBus.registerSubscriber(EventType.KEY_D, lambda x: self.queueAction(EntityActions.MOVE_RIGHT))
-    EventBus.registerSubscriber(EventType.KEY_S, lambda x: self.queueAction(EntityActions.MOVE_DOWN))
-    EventBus.registerSubscriber(EventType.KEY_W, lambda x: self.queueAction(EntityActions.MOVE_UP))
+    EventBus.registerSubscriber(EventType.MOVE_LEFT, partial(self.queueAction, EntityActions.MOVE_LEFT))
+    EventBus.registerSubscriber(EventType.MOVE_RIGHT, partial(self.queueAction, EntityActions.MOVE_RIGHT))
+    EventBus.registerSubscriber(EventType.MOVE_DOWN, partial(self.queueAction, EntityActions.MOVE_DOWN))
+    EventBus.registerSubscriber(EventType.MOVE_UP, partial(self.queueAction, EntityActions.MOVE_UP))
 
 class GameState:
   def __init__(self):

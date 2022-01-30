@@ -3,15 +3,17 @@ import curses
 from eventbus import EventBus, EventType
 import ui
 from state import GameState
+import keybinds
 
 class Game:
   def __init__(self, screen):
     self.screen = screen
     self.ui = ui.UI(screen)
+    self.keybinds = keybinds.Keybindings()
     self.gameState = GameState()
     self.running = False
 
-  def quitGame(self, evt):
+  def quitGame(self):
     self.running = False
 
   def step(self):
@@ -34,7 +36,8 @@ class Game:
     self.gameState.step()
 
   def run(self):
-    EventBus.registerSubscriber(EventType.KEY_Q, self.quitGame)
+    self.keybinds.bind()
+    EventBus.registerSubscriber(EventType.QUIT, self.quitGame)
 
     self.running = True
     while self.running:
