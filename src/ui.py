@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from map import LAND, WATER
 from state import Character, GameState
 from utils import Coordinate, strReplace, clamp
-from state import Player
+from state import Player, NPC
 
 class Renderable(ABC):
   def __init__(self):
@@ -84,6 +84,8 @@ class MapViewport(UIElement):
             ch = 'C'
           elif type(entity) == Player:
             ch = '@'
+          elif type(entity) == NPC:
+            ch = 'N'
 
           color = curses.color_pair(self.tileColors[gameState.map.tiles[dy][dx].name])
           pad.addstr(dy, dx, ch, color)
@@ -100,7 +102,7 @@ class StatBar(UIElement):
       self.entity = gameState.getPlayer()
 
     validActions = gameState.getValidActions(self.entity)
-    pad.addstr(0, 0, str(self.entity.pos))
+    pad.addstr(0, 0, str(f'{self.entity.pos} HP: {self.entity.hp}'))
     pad.addstr(1, 0, ', '.join([ac.name for ac in validActions]))
 
 class UI:

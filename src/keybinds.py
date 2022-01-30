@@ -11,6 +11,18 @@ class Keybindings:
     EventType.KEY_W: EventType.MOVE_UP
   }
 
+  mapKeyEventToKey = {
+    EventType.KEY_Q: 'q',
+    EventType.KEY_A: 'a',
+    EventType.KEY_D: 'd',
+    EventType.KEY_S: 's',
+    EventType.KEY_W: 'w',
+  }
+
+  @classmethod
+  def keyEventToKey(cls, evt):
+    return cls.keyEventToKey[evt]
+
   @classmethod
   def bind(cls):
     ''' Sets up event listeners according to Keybindings.bindings '''

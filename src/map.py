@@ -58,6 +58,13 @@ class Map:
             tiles[i].append(Map.tileTypes[LAND])
     return tiles
 
+  def toPathfindMatrix(self):
+    ''' Returns self.tiles as a 2d list of 1 or 0, depending on the walkable value of the tile '''
+    matrix = []
+    for row in self.tiles:
+      matrix.append([int(tile.walkable) for tile in row])
+    return matrix
+
   def __getitem__(self, coord: Coordinate):
     if coord.x < 0 or coord.y < 0 or coord.y > self.map_h or coord.x > self.map_w:
       raise IndexError

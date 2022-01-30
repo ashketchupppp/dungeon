@@ -8,6 +8,7 @@ class EventType(enum.Enum):
   KEY_S = 'KEY_S'
   KEY_Q = 'KEY_Q'
   QUIT = 'QUIT'
+  END_TURN = 'END_TURN'
   MOVE_LEFT = Coordinate(-1, 0)
   MOVE_RIGHT = Coordinate(1, 0)
   MOVE_UP = Coordinate(0, -1)

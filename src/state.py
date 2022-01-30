@@ -1,15 +1,34 @@
 
+from fileinput import close
+from functools import partial
+
+from pathfinding.core.diagonal_movement import DiagonalMovement
+from pathfinding.core.grid import Grid
+from pathfinding.finder.a_star import AStarFinder
+
 from utils import Coordinate
 import map as _map
 import enum
 from eventbus import EventBus, EventType
-from functools import partial
 
 class EntityActions(enum.Enum):
   MOVE_LEFT = Coordinate(-1, 0)
   MOVE_RIGHT = Coordinate(1, 0)
   MOVE_UP = Coordinate(0, -1)
   MOVE_DOWN = Coordinate(0, 1)
+  MELEE_ATTACK = 'MELEE_ATTACK'
+  
+MOVE_ACTIONS = [
+  EntityActions.MOVE_LEFT,
+  EntityActions.MOVE_RIGHT,
+  EntityActions.MOVE_DOWN,
+  EntityActions.MOVE_UP
+]
+MOVE_ACTION_COORDS = [action.value for action in MOVE_ACTIONS]
+ATTACK_ACTIONS = [
+  EntityActions.MELEE_ATTACK
+]
+MELEE_RANGE = 2
 
 class Entity:
   def __init__(self, pos: Coordinate):
@@ -26,8 +45,13 @@ class Entity:
       pass
 
 class Character(Entity):
-  def __init__(self, pos = Coordinate(0, 0)):
+  def __init__(self, pos = Coordinate(0, 0), hp = 10, ap = 1):
     super().__init__(pos)
+    self.hp = hp
+    self.ap = ap
+
+  def attack(self, target):
+    target.hp -= self.ap
 
 class Player(Character):
   def __init__(self, pos: Coordinate):
@@ -37,12 +61,38 @@ class Player(Character):
     EventBus.registerSubscriber(EventType.MOVE_DOWN, partial(self.queueAction, EntityActions.MOVE_DOWN))
     EventBus.registerSubscriber(EventType.MOVE_UP, partial(self.queueAction, EntityActions.MOVE_UP))
 
+class NPC(Character):
+  def __init__(self, pos=Coordinate(0, 0)):
+      super().__init__(pos)
+
+  def process(self, gameState):
+    ''' Uses the current game state to return an action '''
+    validActions = gameState.getValidActions(self)
+    action = None
+    if EntityActions.MELEE_ATTACK in validActions:
+      nearestEntity = gameState.getNearestEntity(self.pos, excludeList=[self])
+      self.attack(nearestEntity)
+
+    elif set(validActions) <= set(MOVE_ACTIONS):
+      matrix = gameState.map.toPathfindMatrix()
+      grid = Grid(matrix=matrix)
+
+      playerPos = gameState.getPlayer().pos
+      start = grid.node(self.pos.x, self.pos.y)
+      end = grid.node(playerPos.x, playerPos.y)
+
+      finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
+      path, runs = finder.find_path(start, end, grid)
+      direction = Coordinate(*path[1]) - self.pos
+      action = MOVE_ACTIONS[MOVE_ACTION_COORDS.index(direction)]
+    return action
+
 class GameState:
   def __init__(self):
     self.map = _map.Map()
     self.entities = [
       Player(Coordinate(23, 23)),
-      Character(pos=Coordinate(x=20, y=11))
+      NPC(pos=Coordinate(x=20, y=11))
     ]
     self.turnNo = 0
 
@@ -53,6 +103,8 @@ class GameState:
   def step(self):
     ''' Go through all entities queued actions and run them if they are valid. '''
     for e in self.entities:
+      if type(e) == NPC:
+        e.queueAction(e.process(self))
       nextAction = e.nextAction()
       if nextAction:
         if self.validateAction(nextAction['type'], e):
@@ -81,8 +133,18 @@ class GameState:
       self.moveEntity(entity, action['type'].value)
 
   def validateAction(self, actionType: EntityActions, entity: Entity):
-    if actionType in [EntityActions.MOVE_LEFT, EntityActions.MOVE_RIGHT, EntityActions.MOVE_DOWN, EntityActions.MOVE_UP]:
+    if actionType in MOVE_ACTIONS:
       return self.validateMoveAction(actionType, entity)
+    elif actionType in ATTACK_ACTIONS:
+      return self.validateAttackAction(actionType, entity)
+
+  def validateAttackAction(self, actionType: EntityActions, entity):
+    # determine if there is an entity within melee range
+    closestEntity = self.getNearestEntity(entity.pos, excludeList=[entity])
+    if entity.pos.dist(closestEntity.pos) > MELEE_RANGE:
+      return False
+
+    return True
 
   def validateMoveAction(self, actionType: EntityActions, entity):
     targetPos = actionType.value + entity.pos
@@ -99,6 +161,19 @@ class GameState:
       return False
     
     return True
+
+  def getNearestEntity(self, pos: Coordinate, excludeList = []):
+    ''' Returns the nearest entity to pos '''
+    closest = None
+    for e in self.entities:
+      if not e in excludeList:
+        if closest:
+          closestPos = pos.whichIsCloser(e.pos, closest.pos)
+          if pos == closestPos:
+            closest = e
+        else:
+          closest = e
+    return closest
 
   def getEntityAtPos(self, pos: Coordinate):
     ''' Returns an entity at pos, if there is one '''
