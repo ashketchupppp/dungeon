@@ -31,6 +31,7 @@ class Color:
 
 class Pad:
   def __init__(self, pos: Coordinate, w, h):
+    
     self.pad = curses.newpad(h + 1, w + 1)
     self.pos = pos
     self.w = w
