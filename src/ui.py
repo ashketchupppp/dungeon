@@ -117,9 +117,9 @@ class UI:
     self.w = w
     self.h = h
     self.scr = screen
-    statBarHeight = 5
+    statBarHeight = 10
     self.uiElements = [
-      MapViewport(Coordinate(0, 0), 33, 33),
+      MapViewport(Coordinate(0, 0), w, h - statBarHeight - 1),
       StatBar(Coordinate(0, h - statBarHeight), w, statBarHeight)
     ]
     self.initCurses()

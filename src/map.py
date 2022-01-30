@@ -37,7 +37,7 @@ class Map:
       FLOOR: Floor()
     }
 
-  def __init__(self, w=33, h=33, tiles=[]):
+  def __init__(self, w=100, h=100, tiles=[]):
     super().__init__()
     self.map_w = w
     self.map_h = h

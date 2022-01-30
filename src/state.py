@@ -93,16 +93,17 @@ class NPC(Character):
 
       finder = AStarFinder(diagonal_movement=DiagonalMovement.never)
       path, runs = finder.find_path(start, end, grid)
-      direction = Coordinate(*path[1]) - self.pos
-      action = MOVE_ACTIONS[MOVE_ACTION_COORDS.index(direction)]
+      if len(path):
+        direction = Coordinate(*path[1]) - self.pos
+        action = MOVE_ACTIONS[MOVE_ACTION_COORDS.index(direction)]
     return action
 
 class GameState:
   def __init__(self):
     self.map = _map.Map()
     self.entities = [
-      Player(Coordinate(23, 23)),
-      NPC(pos=Coordinate(x=20, y=11))
+      Player(Coordinate(20, 3)),
+      NPC(Coordinate(20, 11))
     ]
     self.turnNo = 0
 
