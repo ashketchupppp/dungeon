@@ -5,6 +5,8 @@ from utils import Coordinate
 
 LAND = 'LAND'
 WATER = 'WATER'
+WALL = 'WALL'
+FLOOR = 'FLOOR'
 
 class Tile:
   def __init__(self, name, walkable = True):
@@ -19,30 +21,44 @@ class Water(Tile):
   def __init__(self):
     super().__init__(WATER, walkable=False)
 
+class Wall(Tile):
+  def __init__(self):
+    super().__init__(WALL, walkable=False)
+
+class Floor(Tile):
+  def __init__(self):
+    super().__init__(FLOOR, walkable=True)
+
 class Map:
   tileTypes = {
       LAND: Land(),
-      WATER: Water()
+      WATER: Water(),
+      WALL: Wall(),
+      FLOOR: Floor()
     }
 
   def __init__(self, w=33, h=33, tiles=[]):
     super().__init__()
     self.map_w = w
     self.map_h = h
+    self.tiles = self.generateLandmap()
+    self.dimensions = (len(self.tiles), len(self.tiles[0]))
+
+  def generateLandmap(self):
+    tiles = []
     noise = PerlinNoise(octaves=2, seed=1)
     self.perlinMap = [[noise([i/self.map_w, j/self.map_h]) for j in range(self.map_w)] for i in range(self.map_h)]
-    self.tiles = tiles
     if not len(tiles):
       for i in range(self.map_h):
-        self.tiles.append([])
+        tiles.append([])
         for j in range(self.map_w):
           if self.perlinMap[i][j] < 0.001:
-            self.tiles[i].append(Map.tileTypes[WATER])
+            tiles[i].append(Map.tileTypes[WATER])
           else:
-            self.tiles[i].append(Map.tileTypes[LAND])
-    self.dimensions = (len(self.tiles), len(self.tiles[0]))
+            tiles[i].append(Map.tileTypes[LAND])
+    return tiles
 
   def __getitem__(self, coord: Coordinate):
     if coord.x < 0 or coord.y < 0 or coord.y > self.map_h or coord.x > self.map_w:
       raise IndexError
-    return self.tiles[coord.x][coord.y]
+    return self.tiles[coord.y][coord.x]

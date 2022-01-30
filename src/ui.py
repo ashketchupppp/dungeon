@@ -3,8 +3,9 @@ import curses
 from abc import ABC, abstractmethod
 
 from map import LAND, WATER
-from state import GameState
-from utils import strReplace
+from state import Character, GameState
+from utils import Coordinate, strReplace, clamp
+from state import Player
 
 class Renderable(ABC):
   def __init__(self):
@@ -16,23 +17,41 @@ class Renderable(ABC):
 
 class Color:
   colors = {}
+  colorKey = 1
 
   @classmethod
   def get(cls, fg, bg) -> int:
     if (fg, bg) in cls.colors:
       return cls.colors[(fg, bg)]
     else:
-      colorNumber = len(cls.colors) + 1
-      cls.colors[(fg, bg)] = colorNumber
-      curses.init_pair(colorNumber, fg, bg)
-      return colorNumber
+      cls.colors[(fg, bg)] = cls.colorKey
+      curses.init_pair(cls.colorKey, fg, bg)
+      cls.colorKey += 1
+      return cls.colorKey - 1
 
-class UIElement(Renderable):
-  def __init__(self, x, y, w, h, visible=False):
+class Pad:
+  def __init__(self, pos: Coordinate, w, h):
+    self.pad = curses.newpad(h + 1, w + 1)
+    self.pos = pos
     self.w = w
     self.h = h
-    self.x = x
-    self.y = y
+
+  def addstr(self, y, x, string, attrs=0):
+    ''' addstr to the pad, x and y are relative to the top-left of the pad NOT the screen '''
+    maxy, maxx = self.pad.getmaxyx()
+    if len(string) > maxx:
+      self.pad.addstr(y, x, string[0:maxx], attrs)
+    else:
+      self.pad.addstr(y, x, string, attrs)
+
+  def refresh(self):
+    self.pad.refresh(0, 0, self.pos.y, self.pos.x, self.pos.y + self.h, self.pos.x + self.w)
+
+class UIElement(Renderable):
+  def __init__(self, pos: Coordinate, w, h, visible=False):
+    self.w = w
+    self.h = h
+    self.pos = pos
     self.visible = visible
 
   def toggleVisible(self):
@@ -40,26 +59,48 @@ class UIElement(Renderable):
 
   def render(self, gameState):
     if self.visible:
-      pad = curses.newpad(self.w, self.h)
+      pad = Pad(self.pos, self.w, self.h)
+      #for i in range(0, self.h):
+      #  pad.addstr(self.pos.y, self.pos.x, ' '*self.w)
       self.draw(pad, gameState)
-      pad.refresh(0, 0, 0, 0, 10, 10)# self.x + self.w, self.y + self.h)
+      pad.refresh()
 
 class MapViewport(UIElement):
-  def __init__(self, x, y, w, h):
-    super().__init__(x, y, w, h, visible=True)
+  def __init__(self, pos, w, h):
+    super().__init__(pos, w, h, visible=True)
     self.tileColors = {
-      LAND: Color.get(0, curses.COLOR_GREEN),
+      LAND: Color.get(curses.COLOR_BLACK, curses.COLOR_GREEN),
       WATER: Color.get(0, curses.COLOR_BLUE),
     }
 
   def draw(self, pad, gameState):
-    for dx in range(self.h):
-      for dy in range(self.w):
+    for dy in range(self.h):
+      for dx in range(self.w):
         try:
-          color = self.tileColors[gameState.map.tiles[dx][dy].name]
-          pad.addch(dy + self.y, dx + self.x, ' ', curses.color_pair(color))
+          tile, entity = gameState[Coordinate(self.pos.x + dx, self.pos.y + dy)]
+          ch = ' '
+          if type(entity) == Character:
+            ch = 'C'
+          elif type(entity) == Player:
+            ch = '@'
+
+          color = curses.color_pair(self.tileColors[gameState.map.tiles[dy][dx].name])
+          pad.addstr(dy, dx, ch, color)
         except IndexError:
           pass
+
+class StatBar(UIElement):
+  def __init__(self, pos, w, h):
+    super().__init__(pos, w, h, visible=True)
+    self.entity = None
+  
+  def draw(self, pad: Pad, gameState: GameState):
+    if not self.entity:
+      self.entity = gameState.getPlayer()
+
+    validActions = gameState.getValidActions(self.entity)
+    pad.addstr(0, 0, str(self.entity.pos))
+    pad.addstr(1, 0, ', '.join([ac.name for ac in validActions]))
 
 class UI:
   def __init__(self, screen, w=50, h=50):
@@ -67,37 +108,18 @@ class UI:
     self.h = h
     self.scr = screen
     self.uiElements = [
-      MapViewport(0, 0, w, h)
+      MapViewport(Coordinate(0, 0), 33, 33),
+      StatBar(Coordinate(0, h - 4), w, 4)
     ]
     self.initCurses()
 
   def initCurses(self):
-    locale.setlocale(locale.LC_ALL, '')
     curses.noecho()
     curses.cbreak()
-    self.scr.keypad(True)
-    curses.start_color()
-    self.scr.nodelay(True)
     curses.curs_set(0)
+    self.scr.keypad(True)
+    self.scr.nodelay(True)
 
   def render(self, gameState: GameState):
     for uiel in self.uiElements:
       uiel.render(gameState)
-
-class StatBar(UIElement):
-  def __init__(self, w, h, entity, visible=False):
-    super().__init__(w, h, visible)
-    self.entity = entity
-    self.color = Color.get(curses.COLOR_WHITE, curses.COLOR_BLUE)
-
-  def render(self, dispArea):
-    if self.visible:
-      num_rows, num_cols = dispArea.getmaxyx()
-      y = num_rows - self.h
-      x = num_cols - self.w
-      stringsToDraw = [*[' '*(self.w - 1) for i in range(self.h)]]
-      stringsToDraw[0] = strReplace(stringsToDraw[0], str(self.entity), 0)
-      stringsToDraw[1] = strReplace(stringsToDraw[1], f'{self.entity.pos.x}, {self.entity.pos.y}', 0)
-
-      for i in range(0, len(stringsToDraw)):
-        dispArea.addstr(y + i, x, stringsToDraw[i], self.color)

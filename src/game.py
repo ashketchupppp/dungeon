@@ -42,6 +42,7 @@ class Game:
       self.step()
 
 def main(screen):
+  curses.start_color()
   game = Game(screen)
   game.run()
 

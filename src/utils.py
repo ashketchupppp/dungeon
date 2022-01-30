@@ -13,6 +13,9 @@ class Coordinate:
       return Coordinate(self.x + other.x, self.y + other.y)
     raise ValueError
 
+  def __str__(self) -> str:
+      return f'{self.x},{self.y}'
+
 def strReplace(string, replacementStr, index):
   ''' Returns the passed string with the replacement string at the given index '''
   s = list(string)
@@ -22,3 +25,8 @@ def strReplace(string, replacementStr, index):
     except IndexError:
       break
   return ''.join(s)
+
+def clamp(val, max):
+  ''' Clamps val to max if val is above max '''
+  return val if val < max else max
+
