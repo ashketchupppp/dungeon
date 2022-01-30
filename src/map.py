@@ -52,10 +52,10 @@ class Map:
       for i in range(self.map_h):
         tiles.append([])
         for j in range(self.map_w):
-          if self.perlinMap[i][j] < 0.001:
-            tiles[i].append(Map.tileTypes[WATER])
-          else:
-            tiles[i].append(Map.tileTypes[LAND])
+          tiles[i].append(Map.tileTypes[LAND])
+          # if self.perlinMap[i][j] < 0.001:
+          #   tiles[i].append(Map.tileTypes[WATER])
+          # else:
     return tiles
 
   def toPathfindMatrix(self):

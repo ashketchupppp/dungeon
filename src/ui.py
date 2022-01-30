@@ -1,13 +1,14 @@
-import locale
-import curses
+from functools import partial
 from abc import ABC, abstractmethod
-from keybinds import Keybindings
+import curses
 
+from keybinds import Keybindings
 from map import LAND, WATER
-from state import Character, GameState
+from state import Character, Entity, GameState, EntityAction
 from utils import Coordinate, strReplace, clamp
 from state import Player, NPC
 from keybinds import Keybindings
+from eventbus import EventBus, EventType
 
 class Renderable(ABC):
   def __init__(self):
@@ -71,26 +72,38 @@ class UIElement(Renderable):
 class MapViewport(UIElement):
   def __init__(self, pos, w, h):
     super().__init__(pos, w, h, visible=True)
+    self.viewPos = Coordinate(0, 0)
+    EventBus.registerSubscriber(EventType.MOVE_DOWN, partial(self.move, EntityAction.MOVE_DOWN.value))
+    EventBus.registerSubscriber(EventType.MOVE_LEFT, partial(self.move, EntityAction.MOVE_LEFT.value))
+    EventBus.registerSubscriber(EventType.MOVE_RIGHT, partial(self.move, EntityAction.MOVE_RIGHT.value))
+    EventBus.registerSubscriber(EventType.MOVE_UP, partial(self.move, EntityAction.MOVE_UP.value))
     self.tileColors = {
       LAND: Color.get(curses.COLOR_BLACK, curses.COLOR_GREEN),
       WATER: Color.get(0, curses.COLOR_BLUE),
     }
 
+  def move(self, dpos: Coordinate):
+    self.viewPos += dpos
+
   def draw(self, pad, gameState):
+    ''' Draws the map in gameState centering on the player '''
+    viewPos = gameState.getPlayer().pos - Coordinate(self.w // 2, self.h // 2)
     for dy in range(self.h):
       for dx in range(self.w):
         try:
-          tile, entity = gameState[Coordinate(self.pos.x + dx, self.pos.y + dy)]
-          ch = ' '
-          if type(entity) == Character:
-            ch = 'C'
-          elif type(entity) == Player:
-            ch = '@'
-          elif type(entity) == NPC:
-            ch = 'N'
+          tilePos = Coordinate(viewPos.x + dx, viewPos.y + dy)
+          if tilePos.x >= 0 and tilePos.y >= 0:
+            tile, entity = gameState[tilePos]
+            ch = ' '
+            if type(entity) == Character:
+              ch = 'C'
+            elif type(entity) == Player:
+              ch = '@'
+            elif type(entity) == NPC:
+              ch = 'N'
 
-          color = curses.color_pair(self.tileColors[gameState.map.tiles[dy][dx].name])
-          pad.addstr(dy, dx, ch, color)
+            color = curses.color_pair(self.tileColors[gameState.map.tiles[tilePos.y][tilePos.x].name])
+            pad.addstr(dy, dx, ch, color)
         except IndexError:
           pass
 
@@ -132,5 +145,6 @@ class UI:
     self.scr.nodelay(True)
 
   def render(self, gameState: GameState):
+    self.scr.erase()
     for uiel in self.uiElements:
       uiel.render(gameState)

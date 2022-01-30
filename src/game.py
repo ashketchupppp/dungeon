@@ -23,9 +23,10 @@ class Game:
     EventBus.registerSubscriber(EventType.END_TURN, self.gameState.step)
 
     self.running = True
+    eventWin = curses.newwin(1, 1)
+    self.ui.render(self.gameState)
     while self.running:
-      self.ui.render(self.gameState)
-      event = self.screen.getch()
+      event = eventWin.getch()
       if event != -1:
         try:
           if event == ord('q'):
@@ -47,6 +48,7 @@ class Game:
             EventBus.triggerEvent(EventType.END_TURN)
         except EventBus.EventDoesNotExist:
           pass # we may not have all keys bound
+        self.ui.render(self.gameState)
 
 def main(screen):
   curses.start_color()

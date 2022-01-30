@@ -11,6 +11,10 @@ class Coordinate:
     self.x = x
     self.y = y
 
+  def clamp(self):
+    ''' Returns a new Coordinate whose values will always be above 0  '''
+    return Coordinate(max([self.x, 0]), max([self.y, 0]))
+
   def __eq__(self, other):
     if type(other) == Coordinate and other.x == self.x and other.y == self.y:
       return True
