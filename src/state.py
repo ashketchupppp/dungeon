@@ -6,12 +6,12 @@ from pathfinding.core.diagonal_movement import DiagonalMovement
 from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
-from utils import Coordinate
+from utils import Coordinate, dictFind
 import map as _map
 import enum
 from eventbus import EventBus, EventType
 
-class EntityActions(enum.Enum):
+class EntityAction(enum.Enum):
   MOVE_LEFT = Coordinate(-1, 0)
   MOVE_RIGHT = Coordinate(1, 0)
   MOVE_UP = Coordinate(0, -1)
@@ -19,14 +19,14 @@ class EntityActions(enum.Enum):
   MELEE_ATTACK = 'MELEE_ATTACK'
   
 MOVE_ACTIONS = [
-  EntityActions.MOVE_LEFT,
-  EntityActions.MOVE_RIGHT,
-  EntityActions.MOVE_DOWN,
-  EntityActions.MOVE_UP
+  EntityAction.MOVE_LEFT,
+  EntityAction.MOVE_RIGHT,
+  EntityAction.MOVE_DOWN,
+  EntityAction.MOVE_UP
 ]
 MOVE_ACTION_COORDS = [action.value for action in MOVE_ACTIONS]
 ATTACK_ACTIONS = [
-  EntityActions.MELEE_ATTACK
+  EntityAction.MELEE_ATTACK
 ]
 MELEE_RANGE = 2
 
@@ -35,7 +35,7 @@ class Entity:
     self.pos = pos
     self.actionQueue = []
   
-  def queueAction(self, actionType: EntityActions, data = {}):
+  def queueAction(self, actionType: EntityAction, data = {}):
     self.actionQueue.append({ 'type': actionType, 'data': data })
 
   def nextAction(self):
@@ -54,12 +54,22 @@ class Character(Entity):
     target.hp -= self.ap
 
 class Player(Character):
+  eventsToActions = {
+    EventType.MOVE_LEFT: EntityAction.MOVE_LEFT,
+    EventType.MOVE_RIGHT: EntityAction.MOVE_RIGHT,
+    EventType.MOVE_DOWN: EntityAction.MOVE_DOWN,
+    EventType.MOVE_UP: EntityAction.MOVE_UP,
+    EventType.MELEE_ATTACK: EntityAction.MELEE_ATTACK
+  }
+
+  @classmethod
+  def getEventFromAction(self, action: EntityAction):
+    return dictFind(Player.eventsToActions, action)
+
   def __init__(self, pos: Coordinate):
     super().__init__(pos=pos)
-    EventBus.registerSubscriber(EventType.MOVE_LEFT, partial(self.queueAction, EntityActions.MOVE_LEFT))
-    EventBus.registerSubscriber(EventType.MOVE_RIGHT, partial(self.queueAction, EntityActions.MOVE_RIGHT))
-    EventBus.registerSubscriber(EventType.MOVE_DOWN, partial(self.queueAction, EntityActions.MOVE_DOWN))
-    EventBus.registerSubscriber(EventType.MOVE_UP, partial(self.queueAction, EntityActions.MOVE_UP))
+    for ac in Player.eventsToActions:
+      EventBus.registerSubscriber(ac, partial(self.queueAction, Player.eventsToActions[ac]))
 
 class NPC(Character):
   def __init__(self, pos=Coordinate(0, 0)):
@@ -69,7 +79,7 @@ class NPC(Character):
     ''' Uses the current game state to return an action '''
     validActions = gameState.getValidActions(self)
     action = None
-    if EntityActions.MELEE_ATTACK in validActions:
+    if EntityAction.MELEE_ATTACK in validActions:
       nearestEntity = gameState.getNearestEntity(self.pos, excludeList=[self])
       self.attack(nearestEntity)
 
@@ -123,22 +133,22 @@ class GameState:
   def getValidActions(self, entity: Entity):
     ''' Returns a list of valid actions for entity '''
     validActions = []
-    for action in EntityActions:
+    for action in EntityAction:
       if self.validateAction(action, entity):
         validActions.append(action)
     return validActions
 
   def executeAction(self, action: dict, entity: Entity):
-    if action['type'] in [EntityActions.MOVE_LEFT, EntityActions.MOVE_RIGHT, EntityActions.MOVE_DOWN, EntityActions.MOVE_UP]:
+    if action['type'] in [EntityAction.MOVE_LEFT, EntityAction.MOVE_RIGHT, EntityAction.MOVE_DOWN, EntityAction.MOVE_UP]:
       self.moveEntity(entity, action['type'].value)
 
-  def validateAction(self, actionType: EntityActions, entity: Entity):
+  def validateAction(self, actionType: EntityAction, entity: Entity):
     if actionType in MOVE_ACTIONS:
       return self.validateMoveAction(actionType, entity)
     elif actionType in ATTACK_ACTIONS:
       return self.validateAttackAction(actionType, entity)
 
-  def validateAttackAction(self, actionType: EntityActions, entity):
+  def validateAttackAction(self, actionType: EntityAction, entity):
     # determine if there is an entity within melee range
     closestEntity = self.getNearestEntity(entity.pos, excludeList=[entity])
     if entity.pos.dist(closestEntity.pos) > MELEE_RANGE:
@@ -146,7 +156,7 @@ class GameState:
 
     return True
 
-  def validateMoveAction(self, actionType: EntityActions, entity):
+  def validateMoveAction(self, actionType: EntityAction, entity):
     targetPos = actionType.value + entity.pos
     targetTile = self.getTileAtPos(targetPos)
     entityAtPos = self.getEntityAtPos(targetPos)

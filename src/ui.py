@@ -1,11 +1,13 @@
 import locale
 import curses
 from abc import ABC, abstractmethod
+from keybinds import Keybindings
 
 from map import LAND, WATER
 from state import Character, GameState
 from utils import Coordinate, strReplace, clamp
 from state import Player, NPC
+from keybinds import Keybindings
 
 class Renderable(ABC):
   def __init__(self):
@@ -103,16 +105,22 @@ class StatBar(UIElement):
 
     validActions = gameState.getValidActions(self.entity)
     pad.addstr(0, 0, str(f'{self.entity.pos} HP: {self.entity.hp}'))
-    pad.addstr(1, 0, ', '.join([ac.name for ac in validActions]))
+
+    # show move actions
+    keybindStr = []
+    for ac in validActions:
+      keybindStr.append(f'{ac.name}: {Keybindings.keyEventToKey(Keybindings.eventToKeyEvent(gameState.getPlayer().getEventFromAction(ac)))}')
+    pad.addstr(1, 0, ', '.join(keybindStr))
 
 class UI:
-  def __init__(self, screen, w=50, h=50):
+  def __init__(self, screen, w, h):
     self.w = w
     self.h = h
     self.scr = screen
+    statBarHeight = 5
     self.uiElements = [
       MapViewport(Coordinate(0, 0), 33, 33),
-      StatBar(Coordinate(0, h - 4), w, 4)
+      StatBar(Coordinate(0, h - statBarHeight), w, statBarHeight)
     ]
     self.initCurses()
 

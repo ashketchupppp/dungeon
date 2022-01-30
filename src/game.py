@@ -9,7 +9,7 @@ import keybinds
 class Game:
   def __init__(self, screen):
     self.screen = screen
-    self.ui = ui.UI(screen)
+    self.ui = ui.UI(screen, curses.COLS - 1, curses.LINES - 1)
     self.keybinds = keybinds.Keybindings()
     self.gameState = GameState()
     self.running = False
@@ -41,6 +41,9 @@ class Game:
             EventBus.triggerEvent(EventType.END_TURN)
           elif event == ord('s'):
             EventBus.triggerEvent(EventType.KEY_S)
+            EventBus.triggerEvent(EventType.END_TURN)
+          elif event == ord('t'):
+            EventBus.triggerEvent(EventType.KEY_T)
             EventBus.triggerEvent(EventType.END_TURN)
         except EventBus.EventDoesNotExist:
           pass # we may not have all keys bound

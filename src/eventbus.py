@@ -7,12 +7,14 @@ class EventType(enum.Enum):
   KEY_A = 'KEY_A'
   KEY_S = 'KEY_S'
   KEY_Q = 'KEY_Q'
+  KEY_T = 'KEY_T'
   QUIT = 'QUIT'
   END_TURN = 'END_TURN'
   MOVE_LEFT = Coordinate(-1, 0)
   MOVE_RIGHT = Coordinate(1, 0)
   MOVE_UP = Coordinate(0, -1)
   MOVE_DOWN = Coordinate(0, 1)
+  MELEE_ATTACK = 'MELEE_ATTACK'
   ENTITY_MOVE = 'ENTITY_MOVE'
 
 class EventBus:

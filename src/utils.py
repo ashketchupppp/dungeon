@@ -1,5 +1,11 @@
 import math
 
+def dictFind(dictionary, val):
+  ''' Searches a dictionary for a key with value val '''
+  for k in dictionary:
+    if dictionary[k] == val:
+      return k
+
 class Coordinate:
   def __init__(self, x, y):
     self.x = x

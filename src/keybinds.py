@@ -2,13 +2,16 @@ from multiprocessing import Event
 from eventbus import EventBus, EventType
 from functools import partial
 
+from utils import dictFind
+
 class Keybindings:
   bindings = {
     EventType.KEY_Q: EventType.QUIT,
     EventType.KEY_A: EventType.MOVE_LEFT,
     EventType.KEY_D: EventType.MOVE_RIGHT,
     EventType.KEY_S: EventType.MOVE_DOWN,
-    EventType.KEY_W: EventType.MOVE_UP
+    EventType.KEY_W: EventType.MOVE_UP,
+    EventType.KEY_T: EventType.MELEE_ATTACK
   }
 
   mapKeyEventToKey = {
@@ -17,11 +20,16 @@ class Keybindings:
     EventType.KEY_D: 'd',
     EventType.KEY_S: 's',
     EventType.KEY_W: 'w',
+    EventType.KEY_T: 't',
   }
 
   @classmethod
   def keyEventToKey(cls, evt):
-    return cls.keyEventToKey[evt]
+    return cls.mapKeyEventToKey[evt]
+
+  @classmethod
+  def eventToKeyEvent(cls, evt: EventType):
+    return dictFind(Keybindings.bindings, evt)
 
   @classmethod
   def bind(cls):
