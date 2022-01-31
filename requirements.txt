@@ -1,3 +1,4 @@
 perlin_noise
 lib/curses-2.2.1+utf8-cp37-cp37m-win_amd64.whl
 pathfinding
+numpy

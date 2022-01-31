@@ -7,7 +7,7 @@ from pathfinding.core.grid import Grid
 from pathfinding.finder.a_star import AStarFinder
 
 from utils import Coordinate, dictFind
-import map as _map
+from map import Map, Tiles
 import enum
 from eventbus import EventBus, EventType
 
@@ -100,7 +100,7 @@ class NPC(Character):
 
 class GameState:
   def __init__(self):
-    self.map = _map.Map()
+    self.map = Map()
     self.entities = [
       Player(Coordinate(20, 3)),
       NPC(Coordinate(20, 11))
@@ -162,10 +162,10 @@ class GameState:
     targetTile = self.getTileAtPos(targetPos)
     entityAtPos = self.getEntityAtPos(targetPos)
   
-    if not targetTile:
+    if targetTile == None:
       return False
 
-    elif not targetTile.walkable:
+    elif not Tiles.get(targetTile).walkable:
       return False
 
     if entityAtPos:

@@ -70,3 +70,15 @@ def strReplace(string, replacementStr, index):
 def clamp(val, max):
   ''' Clamps val to max if val is above max '''
   return val if val < max else max
+
+def ListReplaceTwoD(l: list, listToPlace: list, x: int, y: int):
+  ''' Replaces the values in list l with the values in listToPlace, starting at pos x and y at the top left '''
+  # make sure we can fit listToPlace in l
+  # for each line of listToPlace
+    # starting at l[y + lineNo][x]
+    # for each tileNo of listToPlace[lineNo]
+      # check if l[y + lineNo][x + lineNo] exists
+  for ltpY in range(len(listToPlace)):
+    for ltpX in range(len(listToPlace[ltpY])):
+      if l[y + ltpY][x + ltpX]:
+        pass

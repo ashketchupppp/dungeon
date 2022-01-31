@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import curses
 
 from keybinds import Keybindings
-from map import LAND, WATER
+from map import Tiles
 from state import Character, Entity, GameState, EntityAction
 from utils import Coordinate, strReplace, clamp
 from state import Player, NPC
@@ -64,8 +64,6 @@ class UIElement(Renderable):
   def render(self, gameState):
     if self.visible:
       pad = Pad(self.pos, self.w, self.h)
-      #for i in range(0, self.h):
-      #  pad.addstr(self.pos.y, self.pos.x, ' '*self.w)
       self.draw(pad, gameState)
       pad.refresh()
 
@@ -78,8 +76,8 @@ class MapViewport(UIElement):
     EventBus.registerSubscriber(EventType.MOVE_RIGHT, partial(self.move, EntityAction.MOVE_RIGHT.value))
     EventBus.registerSubscriber(EventType.MOVE_UP, partial(self.move, EntityAction.MOVE_UP.value))
     self.tileColors = {
-      LAND: Color.get(curses.COLOR_BLACK, curses.COLOR_GREEN),
-      WATER: Color.get(0, curses.COLOR_BLUE),
+      Tiles.LAND: Color.get(curses.COLOR_BLACK, curses.COLOR_GREEN),
+      Tiles.WATER: Color.get(0, curses.COLOR_BLUE),
     }
 
   def move(self, dpos: Coordinate):
@@ -102,7 +100,7 @@ class MapViewport(UIElement):
             elif type(entity) == NPC:
               ch = 'N'
 
-            color = curses.color_pair(self.tileColors[gameState.map.tiles[tilePos.y][tilePos.x].name])
+            color = curses.color_pair(self.tileColors[gameState.map.tiles[tilePos.y][tilePos.x]])
             pad.addstr(dy, dx, ch, color)
         except IndexError:
           pass
@@ -140,7 +138,6 @@ class UI:
   def initCurses(self):
     curses.noecho()
     curses.cbreak()
-    curses.curs_set(0)
     self.scr.keypad(True)
     self.scr.nodelay(True)
 
@@ -148,3 +145,4 @@ class UI:
     self.scr.erase()
     for uiel in self.uiElements:
       uiel.render(gameState)
+    curses.curs_set(0)
