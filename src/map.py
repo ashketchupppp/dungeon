@@ -1,3 +1,4 @@
+import unittest
 from perlin_noise import PerlinNoise
 import numpy as np
 
@@ -45,15 +46,24 @@ class Tiles:
   def get(cls, i):
     return cls._TILES[i]
 
-class Room:
-  ''' Stores a rectangular room with width w and height h '''
-  def __init__(self, w, h):
+class TileArea:
+  ''' Stores a rectangular area of tiles with width w and height h '''
+  def __init__(self, w, h, tType=Tiles.WATER):
     self.w = w
     self.h = h
-    self.tiles = [[Floor() for t in range(w)] for x in range(h)]
+    self.tiles = np.array([[tType for t in range(w)] for x in range(h)])
 
-  def __getitem__(self, x, y):
-    return self.tiles[y][x]
+  def __getitem__(self, i):
+    return self.tiles[i]
+
+  def __len__(self):
+    return len(self.tiles)
+
+  def placeArea(self, area, x: int, y: int):
+    ''' Places tiles from area into tiles of another area at position x, y
+        https://numpy.org/doc/stable/user/basics.indexing.html "Dimensional indexing tools"
+    '''
+    self.tiles[y:area.tiles.shape[0] + y, x:area.tiles.shape[1] + x] = area.tiles
 
 class Map:
   def __init__(self, w=100, h=100, tiles=[]):
@@ -64,31 +74,20 @@ class Map:
     self.dimensions = (len(self.tiles), len(self.tiles[0]))
 
   def generateLandmap(self):
-    tiles = []
+    tiles = TileArea(self.map_w, self.map_h)
     noise = PerlinNoise(octaves=2, seed=1)
-    self.perlinMap = [[noise([i/self.map_w, j/self.map_h]) for j in range(self.map_w)] for i in range(self.map_h)]
-    if not len(tiles):
-      for i in range(self.map_h):
-        tiles.append([])
-        for j in range(self.map_w):
-          if self.perlinMap[i][j] < 0.001:
-            tiles[i].append(Tiles.WATER)
-          else:
-            tiles[i].append(Tiles.LAND)
-    return np.array(tiles)
-
-  def placeRoom(self, room: Room, x: int, y: int):
-    if -1 < x < self.map_w and -1 < y < self.map_h:
-      pass
-    else:
-      raise ValueError
+    perlinMap = [[noise([i/self.map_w, j/self.map_h]) for j in range(self.map_w)] for i in range(self.map_h)]
+    for j in range(self.map_h):
+      for i in range(self.map_w):
+        if perlinMap[j][i] > 0.001:
+          tiles[j][i] = Tiles.LAND
+    return tiles
 
   def toPathfindMatrix(self):
     ''' Returns self.tiles as a 2d list of 1 or 0, depending on the walkable value of the tile '''
     def mapping(t):
       return int(Tiles.get(t).walkable)
     return np.vectorize(mapping)(self.tiles)
-
 
   def __getitem__(self, coord: Coordinate):
     if coord.x < 0 or coord.y < 0 or coord.y > self.map_h or coord.x > self.map_w:
