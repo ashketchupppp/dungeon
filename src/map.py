@@ -65,31 +65,26 @@ class TileArea:
     '''
     self.tiles[y:area.tiles.shape[0] + y, x:area.tiles.shape[1] + x] = area.tiles
 
-class Map:
-  def __init__(self, w=100, h=100, tiles=[]):
-    super().__init__()
-    self.map_w = w
-    self.map_h = h
-    self.tiles = self.generateLandmap()
-    self.dimensions = (len(self.tiles), len(self.tiles[0]))
+class Map(TileArea):
+  def __init__(self, w=100, h=100, tType=Tiles.WATER):
+    super().__init__(w, h, tType)
+    self.generateLandmap()
 
   def generateLandmap(self):
-    tiles = TileArea(self.map_w, self.map_h)
     noise = PerlinNoise(octaves=2, seed=1)
-    perlinMap = [[noise([i/self.map_w, j/self.map_h]) for j in range(self.map_w)] for i in range(self.map_h)]
-    for j in range(self.map_h):
-      for i in range(self.map_w):
+    perlinMap = [[noise([i/self.w, j/self.h]) for j in range(self.w)] for i in range(self.h)]
+    for j in range(self.h):
+      for i in range(self.w):
         if perlinMap[j][i] > 0.001:
-          tiles[j][i] = Tiles.LAND
-    return tiles
+          self.tiles[j][i] = Tiles.LAND
 
-  def toPathfindMatrix(self):
+  def toWalkable(self):
     ''' Returns self.tiles as a 2d list of 1 or 0, depending on the walkable value of the tile '''
     def mapping(t):
       return int(Tiles.get(t).walkable)
     return np.vectorize(mapping)(self.tiles)
 
   def __getitem__(self, coord: Coordinate):
-    if coord.x < 0 or coord.y < 0 or coord.y > self.map_h or coord.x > self.map_w:
+    if coord.x < 0 or coord.y < 0 or coord.y > self.h or coord.x > self.w:
       raise IndexError
     return self.tiles[coord.y][coord.x]
