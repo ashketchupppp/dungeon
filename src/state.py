@@ -28,7 +28,7 @@ MOVE_ACTION_COORDS = [action.value for action in MOVE_ACTIONS]
 ATTACK_ACTIONS = [
   EntityAction.MELEE_ATTACK
 ]
-MELEE_RANGE = 2
+MELEE_RANGE = 1
 
 class Entity:
   def __init__(self, pos: Coordinate):
@@ -84,7 +84,7 @@ class NPC(Character):
       self.attack(nearestEntity)
 
     elif set(validActions) <= set(MOVE_ACTIONS):
-      matrix = gameState.map.toPathfindMatrix()
+      matrix = gameState.map.toWalkable()
       grid = Grid(matrix=matrix)
 
       playerPos = gameState.getPlayer().pos
@@ -102,7 +102,7 @@ class GameState:
   def __init__(self):
     self.map = Map()
     self.entities = [
-      Player(Coordinate(20, 3)),
+      Player(Coordinate(6, 6)),
       NPC(Coordinate(20, 11))
     ]
     self.turnNo = 0

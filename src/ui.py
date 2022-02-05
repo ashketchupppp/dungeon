@@ -78,6 +78,8 @@ class MapViewport(UIElement):
     self.tileColors = {
       Tiles.LAND: Color.get(curses.COLOR_BLACK, curses.COLOR_GREEN),
       Tiles.WATER: Color.get(0, curses.COLOR_BLUE),
+      Tiles.FLOOR: Color.get(0, curses.COLOR_YELLOW),
+      Tiles.WALL: Color.get(0, curses.COLOR_BLACK)
     }
 
   def move(self, dpos: Coordinate):

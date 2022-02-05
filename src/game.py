@@ -5,6 +5,10 @@ from eventbus import EventBus, EventType
 import ui
 from state import GameState
 import keybinds
+import random
+import time
+
+random.seed(time.time())
 
 class Game:
   def __init__(self, screen):
