@@ -102,7 +102,7 @@ class GameState:
   def __init__(self):
     self.map = Map()
     self.entities = [
-      Player(Coordinate(6, 6)),
+      Player(Coordinate(self.map.w // 2, self.map.w // 2)),
       NPC(Coordinate(20, 11))
     ]
     self.turnNo = 0

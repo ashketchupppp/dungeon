@@ -1,4 +1,5 @@
 import math
+import random
 
 def dictFind(dictionary, val):
   ''' Searches a dictionary for a key with value val '''
@@ -6,10 +7,24 @@ def dictFind(dictionary, val):
     if dictionary[k] == val:
       return k
 
+possibleDirections = [
+  [1, 1],
+  [-1, 1],
+  [1, -1],
+  [-1, -1]
+]
+def randomDirection():
+  return random.choice(possibleDirections)
+
 class Coordinate:
-  def __init__(self, x, y):
+  def __init__(self, x: int, y: int):
     self.x = x
     self.y = y
+
+  @classmethod
+  def fromIterable(cls, iterable: iter):
+    assert len(iterable) > 1
+    return cls(iterable[0], iterable[1])
 
   def clamp(self):
     ''' Returns a new Coordinate whose values will always be above 0  '''
@@ -29,6 +44,13 @@ class Coordinate:
     if type(other) == Coordinate:
       return Coordinate(self.x - other.x, self.y - other.y)
     raise ValueError
+  
+  def __mul__(self, other):
+    if type(other) == Coordinate:
+      return Coordinate(self.x * other.x, self.y * other.y)
+    if type(other) == float or type(other) == int:
+      return Coordinate(self.x * other, self.y * other)
+    return ValueError
 
   def __str__(self) -> str:
       return f'{self.x},{self.y}'
@@ -36,6 +58,10 @@ class Coordinate:
   def __iter__(self):
     yield self.x
     yield self.y
+
+  def floor(self):
+    self.x = math.floor(self.x)
+    self.y = math.floor(self.y)
 
   def dist(self, other):
     if type(other) == Coordinate:

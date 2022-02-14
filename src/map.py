@@ -1,10 +1,11 @@
+from tracemalloc import start
 import unittest
 from perlin_noise import PerlinNoise
 import numpy as np
 import networkx as nx
 import random
 
-from utils import Coordinate
+from utils import Coordinate, randomDirection
 
 class Tile:
   def __init__(self, name, walkable = True):
@@ -72,16 +73,29 @@ class TileArea:
     self.tiles[y:area.tiles.shape[0] + y, x:area.tiles.shape[1] + x] = area.tiles
 
 class Rooms:
-  def __init__(self, n: int, maxW: int, maxH: int, minW: int, minH: int):
-    self.graph = nx.minimum_spanning_tree(nx.random_regular_graph(n // 3, n))
+  def __init__(self, n: int, maxW: int, maxH: int, minW: int, minH: int, maxDist: int):
+    self.graph = nx.minimum_spanning_tree(nx.random_regular_graph(n // 2, n))
     for node in self.graph.nodes:
       self.graph.nodes[node]['area'] = TileArea(
         random.randint(minW, maxW),
         random.randint(minH, maxH),
         tType=Tiles.FLOOR
       )
+    startingPos = Coordinate(0, 0)
+    first = True
     for edge in self.graph.edges:
-      self.graph.edges[edge]['dist'] = random.randint()
+      # get the pos of node0 (set it if the first)
+      # set the pos node1 to be the dist + node0 pos
+      node0 = self.graph.nodes[edge[0]]
+      node1 = self.graph.nodes[edge[1]]
+      dist = Coordinate(node0['area'].w, node0['area'].h).dist(Coordinate(node1['area'].w, node1['area'].h))
+      distCoord = Coordinate(dist, dist) * Coordinate.fromIterable(randomDirection())
+      distCoord.floor()
+      self.graph.edges[edge]['dist'] = distCoord
+      if first:
+        node0['pos'] = startingPos
+        first = False
+      node1['pos'] = node0['pos'] + self.graph.edges[edge]['dist']
 
   def nodes(self, data=False) -> list:
     ''' If data is false then returns a list of graph nodes, list(int)
@@ -89,11 +103,14 @@ class Rooms:
     '''
     return self.graph.nodes.data(data=data)
 
+  def edges(self, data=False) -> list:
+    return self.graph.edges.data(data=data)
+
 class Map(TileArea):
   def __init__(self, w=100, h=100, tType=Tiles.WATER):
     super().__init__(w, h, tType)
     self.defaultTile = tType
-    self.generateDungeon(2)
+    self.generateDungeon(20)
 
   def generateLandmap(self):
     self.clear(self.defaultTile)
@@ -104,11 +121,15 @@ class Map(TileArea):
         if perlinMap[j][i] > 0.001:
           self.tiles[j][i] = Tiles.LAND
 
-  def generateDungeon(self, numRooms: int, maxW=10, maxH=10, minW=2, minH=2):
+  def generateDungeon(self, numRooms: int, maxW=10, maxH=10, minW=2, minH=2, maxDist=20):
     self.clear(Tiles.WALL)
-    rooms = Rooms(numRooms, maxW, maxH, minW, minH)
-    for room in rooms.nodes(data=True):
-      self.placeArea(room[1]['area'], 5, 5)
+    rooms = Rooms(numRooms, maxW, maxH, minW, minH, maxDist)
+    startingCoord = Coordinate(self.w // 2, self.h // 2)
+    nodes = rooms.nodes(data=True)
+    edges = rooms.edges(data=True)
+    positions = {}
+    for room in nodes:
+      self.placeArea(room[1]['area'], startingCoord.x + room[1]['pos'].x, startingCoord.y + room[1]['pos'].y)
 
   def toWalkable(self):
     ''' Returns self.tiles as a 2d list of 1 or 0, depending on the walkable value of the tile '''
